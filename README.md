@@ -4,8 +4,8 @@
 
 0. Required Linux host OS
 
-    - Ubuntu 12.04.3 32Bit
-    - Ubuntu 12.04.3 64Bit
+    - Ubuntu 16.04 32Bit
+    - Ubuntu 16.04 64Bit
 
 1. Clone
 
@@ -19,7 +19,7 @@
 
 3. Check
     
-    cd output/autowriter
+    ls -al output/autowriter
 
 ## Firmware Flash Steps
 
