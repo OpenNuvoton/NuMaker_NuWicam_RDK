@@ -1,0 +1,10 @@
+obj-m += board_leds.o
+KVERSION := 2.6.35.4
+CROSS_COMPILE := arm-linux-
+ARCH := arm
+KERNELSRC := ../../
+all:
+	CROSS_COMPILE=$(CROSS_COMPILE) ARCH=$(ARCH) KERNELSRC=$(KERNELSRC) make -C $(KERNELSRC) M=$(PWD) modules
+
+clean:
+	CROSS_COMPILE=$(CROSS_COMPILE) ARCH=$(ARCH) KERNELSRC=$(KERNELSRC) make -C $(KERNELSRC) M=$(PWD) clean

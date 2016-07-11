@@ -1,0 +1,4 @@
+ctrl_interface=/tmp/wpa_supplicant
+ctrl_interface_group=0
+update_config=1
+
