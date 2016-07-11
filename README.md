@@ -14,6 +14,7 @@
 2. Build
 
     cd NuWicam
+    
     scripts/build.sh
 
 3. Check
