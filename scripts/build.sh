@@ -35,7 +35,7 @@ toolchain_make()
     $APT_GET update
 
     echo "Installing tools..."
-    $APT_GET install lzop zip automake
+    $APT_GET install lzop zip automake autoconf bison flex
 
     if [ `uname -m` == 'x86_64' ]; then
         echo Installing 32bit libraries...
@@ -222,5 +222,5 @@ usage()
     echo "Build NuWicam Firmware".
 }
 
-#all_make
-all_clean
+all_make
+#all_clean
