@@ -21,6 +21,6 @@
     
     ls -al output/autowriter
 
-## Firmware Flash Steps
+## Firmware Programming
 
     Please refer Autowriter chatper in NuMaker_NuWicam_BSP/doc/Nuvoton NuMaker NuWicam User Guide.pdf document.
