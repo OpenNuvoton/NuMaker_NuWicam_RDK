@@ -9,11 +9,11 @@
 
 1. Clone
 
-    git clone https://github.com/XXXXXX/NuMaker_NuWicam.git
+    git clone https://github.com/OpenNuvoton/NuMaker_NuWicam_BSP.git
 
 2. Build
 
-    cd NuWicam
+    cd NuMaker_NuWicam_BSP
     
     scripts/build.sh
 
@@ -23,4 +23,4 @@
 
 ## Firmware Flash Steps
 
-    Please refer Autowriter chatper in NuWicam/doc/Nuvoton NuMaker NuWicam User Guide.pdf document.
+    Please refer Autowriter chatper in NuMaker_NuWicam_BSP/doc/Nuvoton NuMaker NuWicam User Guide.pdf document.
