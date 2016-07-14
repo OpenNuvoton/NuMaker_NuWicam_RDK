@@ -7,14 +7,14 @@ This repository is for Nuvotom NuMaker NuWicam Reference Design Kit. It includes
 0. Required Linux host OS
 
     - Ubuntu 15.04 32Bit (Tested)
-    - Ubuntu 16.04 32Bit
+    - Ubuntu 16.04 32Bit (Tested)
     - Ubuntu 16.04 64Bit
 
 1. Clone
 
     sudo apt-get install git
 
-    git clone https://github.com/OpenNuvoton/NuMaker_NuWicam_RDK.git
+    git clone https://github.com/wosayttn/NuMaker_NuWicam_RDK.git
 
 2. Build
 
