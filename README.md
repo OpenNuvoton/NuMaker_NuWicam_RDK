@@ -1,6 +1,6 @@
 # NuMaker_NuWicam_RDK
 
-This repository is NuMaker NuWicam Reference Design Kit. It includes board schematics, firmware, tools and documents.
+This repository is for Nuvotom NuMaker NuWicam Reference Design Kit. It includes board schematics, firmware, tools and documents resources for your reference.
 
 ## Firmware Build Steps
 
