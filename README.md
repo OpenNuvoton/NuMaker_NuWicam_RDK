@@ -2,7 +2,7 @@
 
 This repository is for Nuvotom NuMaker NuWicam Reference Design Kit. It includes board schematics, firmware, tools and documents resources for your reference.
 
-## Firmware Build Steps
+## Firmware Building Steps
 
 0. Required Linux host OS
 
