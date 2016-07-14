@@ -1,4 +1,6 @@
-# NuMaker_NuWicam_BSP
+# NuMaker_NuWicam_RDK
+
+This repository is NuMaker NuWicam Reference Design Kit. It includes board schematics, firmware, tools and documents.
 
 ## Firmware Build Steps
 
@@ -12,11 +14,11 @@
 
     sudo apt-get install git
 
-    git clone https://github.com/OpenNuvoton/NuMaker_NuWicam_BSP.git
+    git clone https://github.com/OpenNuvoton/NuMaker_NuWicam_RDK.git
 
 2. Build
 
-    cd NuMaker_NuWicam_BSP
+    cd NuMaker_NuWicam_RDK
     
     scripts/build.sh
 
@@ -26,4 +28,4 @@
 
 ## Firmware Programming
 
-    Please refer Autowriter chatper in NuMaker_NuWicam_BSP/doc/Nuvoton NuMaker NuWicam User Guide.pdf document.
+    Please refer Autowriter chatper in NuMaker_NuWicam_RDK/doc/Nuvoton NuMaker NuWicam User Guide.pdf document.
