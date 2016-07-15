@@ -35,11 +35,13 @@ toolchain_make()
     $APT_GET update
 
     echo "Installing tools..."
-    $APT_GET install lzop zip automake autoconf bison flex
+    $APT_GET install lzop zip automake autoconf bison flex mtd-tools
 
     if [ `uname -m` == 'x86_64' ]; then
         echo Installing 32bit libraries...
         $APT_GET install --force-yes ia32-libs ia32-libs-multiarch liblzo2-2:i386 liblzma5:i386
+	$APT_GET install --force-yes lib32ncurses5 lib32z1 lib32bz2
+	$APT_GET install --force-yes lib32stdc++6
     fi
 
     if [[ -L "$TOOLCHAIN_ABS_PATH" && -d "$TOOLCHAIN_ABS_PATH" ]]; then
