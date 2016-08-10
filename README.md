@@ -14,7 +14,7 @@ This repository is for Nuvotom NuMaker NuWicam Reference Design Kit. It includes
 
     sudo apt-get install git
 
-    git clone https://github.com/wosayttn/NuMaker_NuWicam_RDK.git
+    git clone https://github.com/OpenNuvoton/NuMaker_NuWicam_RDK.git
 
 2. Build
 
