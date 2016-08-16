@@ -185,6 +185,7 @@ image_pack()
 			cp -af $DEV_ROOT"/tool/autowriter" $DEV_ROOT"/output/autowriter_"$sensor
 			cp -af $IMAGES_PATH"/conprog.gz."$sensor   	$DEV_ROOT"/output/autowriter_"$sensor/conprog.gz
 			cp -af $IMAGES_PATH"/app_fs_jffs2.img"   	$DEV_ROOT"/output/autowriter_"$sensor/
+			sed -i 's/NUWICAM_UVC_VideoIn.bin/NUWICAM_UVC_VideoIn_'$sensor'.bin/g' $DEV_ROOT"/output/autowriter_"$sensor"/AutoWriter.ini"
 			ls -al $DEV_ROOT"/output/autowriter_"$sensor/
 		fi
         done
