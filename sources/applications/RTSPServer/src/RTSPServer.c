@@ -47,8 +47,10 @@ volatile static S_RTSP_CONFIG s_sConfig = {
 	.m_szAuthRealm = NULL,
 	.m_szAudioStreamPath = NULL,
 	.m_eAudioStreamAudio = eRTSP_AUDIOMASK_NONE,
-	.m_uiVinWidth = 640,
-	.m_uiVinHeight = 480,
+	.m_uiVinPlannerWidth = 640,
+	.m_uiVinPlannerHeight = 480,
+	.m_uiVinPacketWidth = 8,	//For saving memory bandwidth
+	.m_uiVinPacketHeight = 8,	//For saving memory bandwidth
 	.m_uiJpegWidth = 640,
 	.m_uiJpegHeight = 480,
 };
@@ -56,8 +58,10 @@ volatile static S_RTSP_CONFIG s_sConfig = {
 static void ShowUsage()
 {
 	printf("RTSPServer [options]\n");
-	printf("-w video-in width. Must multiple of 8 \n");
-	printf("-d video-in height. Must multiple of 8 \n");
+	printf("-w video-in planner width. Must multiple of 8 \n");
+	printf("-d video-in planner height. Must multiple of 8 \n");
+	printf("-x video-in packet width. Must multiple of 8 \n");
+	printf("-y video-in packet height. Must multiple of 8 \n");
 	printf("-i Jpeg encode width \n");
 	printf("-e Jpeg encode height\n");
 	printf("-b Jpeg bit rate \n");
@@ -70,7 +74,7 @@ main(int argc, char **argv)
 	int32_t i32Opt;
 
 	// Parse options
-	while ((i32Opt = getopt(argc, argv, "w:d:i:e:b:h")) != -1) {
+	while ((i32Opt = getopt(argc, argv, "w:d:x:y:i:e:b:h")) != -1) {
 		switch (i32Opt) {
 			case 'w':
 			{
@@ -79,9 +83,9 @@ main(int argc, char **argv)
 				if(u32Width){
 					if(u32Width % 8){
 						u32Width =  u32Width & ~7;
-						printf("The video-in width must multiple of 8. Set video-in width to %d \n", u32Width);
+						printf("The video-in width must multiple of 8. Set video-in planner width to %d \n", u32Width);
 					}
-					s_sConfig.m_uiVinWidth = u32Width;
+					s_sConfig.m_uiVinPlannerWidth = u32Width;
 				}
 				else{
 					printf("Specified an invalid video-in width %d \n", u32Width);
@@ -96,9 +100,9 @@ main(int argc, char **argv)
 				if(u32Height){
 					if(u32Height % 8){
 						u32Height =  u32Height & ~7;
-						printf("The video-in height must multiple of 8. Set video-in height to %d \n", u32Height);
+						printf("The video-in height must multiple of 8. Set video-in planner height to %d \n", u32Height);
 					}
-					s_sConfig.m_uiVinHeight = u32Height;
+					s_sConfig.m_uiVinPlannerHeight = u32Height;
 				}
 				else{
 					printf("Specified an invalid video-in height %d \n", u32Height);
@@ -106,6 +110,41 @@ main(int argc, char **argv)
 				}
 			}
 			break;
+			case 'x':
+			{
+				uint32_t u32Width = atoi(optarg); 
+				
+				if(u32Width){
+					if(u32Width % 8){
+						u32Width =  u32Width & ~7;
+						printf("The video-in width must multiple of 8. Set video-in packet width to %d \n", u32Width);
+					}
+					s_sConfig.m_uiVinPacketWidth = u32Width;
+				}
+				else{
+					printf("Specified an invalid video-in width %d \n", u32Width);
+					exit(-1);
+				}
+			}
+			break;
+			case 'y':
+			{
+				uint32_t u32Height = atoi(optarg);
+				
+				if(u32Height){
+					if(u32Height % 8){
+						u32Height =  u32Height & ~7;
+						printf("The video-in height must multiple of 8. Set video-in packet height to %d \n", u32Height);
+					}
+					s_sConfig.m_uiVinPacketHeight = u32Height;
+				}
+				else{
+					printf("Specified an invalid video-in height %d \n", u32Height);
+					exit(-1);
+				}
+			}
+			break;
+			
 			case 'i':
 			{
 				uint32_t u32Width = atoi(optarg); 

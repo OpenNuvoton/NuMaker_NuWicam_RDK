@@ -27,12 +27,14 @@ typedef struct{
 	unsigned int u32RemainBufPhyAdr;
 }S_BUF_INFO;
 
-typedef struct 
+typedef struct
 {
-	int32_t i32PipeBufNo;
-	int32_t i32PipeBufSize;
-	int32_t i32CurrPipePhyAddr;
+        int32_t i32PipeBufNo;
+        int32_t i32PipeBufSize;
+        int32_t i32CurrPipePhyAddr;
+        int32_t i32CurrBufIndex;
 }S_PIPE_INFO;
+
 
 #define V4L_ERR					0x80400000							
 #define ERR_V4L_SUCCESS				0
@@ -98,12 +100,14 @@ typedef struct S_NM_VIDEOCTX {
 
 ERRCODE
 InitV4LDevice(
-	S_NM_VIDEOCTX *psVideoSrcCtx
+	S_NM_VIDEOCTX *psVideoSrcPlannerCtx, 
+	S_NM_VIDEOCTX *psVideoSrcPacketCtx	
 );
 
 ERRCODE
 ReadV4LPicture(
-	S_NM_VIDEOCTX *psVideoSrcCtx
+	S_NM_VIDEOCTX *psVideoSrcPlannerCtx, 
+	S_NM_VIDEOCTX *psVideoSrcPacketCtx	
 );
 
 ERRCODE

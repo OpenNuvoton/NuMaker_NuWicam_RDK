@@ -203,19 +203,36 @@ static int jpeg_config(
 
 		run_context_statement(pvJpegCtx, pvCtxData, tokens, 2);
 
+//For planner
 		tokens[0].type = TOKEN_STR;
-		strcpy(tokens[0].v.str, "vin_width");
+		strcpy(tokens[0].v.str, "vin_planner_width");
 		tokens[1].type = TOKEN_NUM;
-		tokens[1].v.num = psConfig->m_uiVinWidth;
+		tokens[1].v.num = psConfig->m_uiVinPlannerWidth;
 
 		run_context_statement(pvJpegCtx, pvCtxData, tokens, 2);
 
 		tokens[0].type = TOKEN_STR;
-		strcpy(tokens[0].v.str, "vin_height");
+		strcpy(tokens[0].v.str, "vin_planner_height");
 		tokens[1].type = TOKEN_NUM;
-		tokens[1].v.num = psConfig->m_uiVinHeight;
+		tokens[1].v.num = psConfig->m_uiVinPlannerHeight;
 
 		run_context_statement(pvJpegCtx, pvCtxData, tokens, 2);
+		
+//For packet
+		tokens[0].type = TOKEN_STR;
+		strcpy(tokens[0].v.str, "vin_packet_width");
+		tokens[1].type = TOKEN_NUM;
+		tokens[1].v.num = psConfig->m_uiVinPacketWidth;
+
+		run_context_statement(pvJpegCtx, pvCtxData, tokens, 2);
+
+		tokens[0].type = TOKEN_STR;
+		strcpy(tokens[0].v.str, "vin_packet_height");
+		tokens[1].type = TOKEN_NUM;
+		tokens[1].v.num = psConfig->m_uiVinPacketHeight;
+
+		run_context_statement(pvJpegCtx, pvCtxData, tokens, 2);
+//==================================================================================
 
 		tokens[0].type = TOKEN_STR;
 		strcpy(tokens[0].v.str, "jpeg_width");

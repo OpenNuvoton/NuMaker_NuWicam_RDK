@@ -51,10 +51,12 @@ typedef struct rtsp_config_t {
 	E_RTSP_AUDIOMASK m_eAudioStreamAudio;
 	uint32_t	m_auiH264MaxConnNum[DEF_MAX_H264_CAM];
 	uint32_t	m_auiMJPGMaxConnNum[DEF_MAX_MJPEG_CAM];
-	uint32_t 	m_uiVinWidth;
-	uint32_t 	m_uiVinHeight;
+	uint32_t 	m_uiVinPlannerWidth;
+	uint32_t 	m_uiVinPlannerHeight;
+	uint32_t 	m_uiVinPacketWidth;
+	uint32_t 	m_uiVinPacketHeight;
 	uint32_t 	m_uiJpegWidth;
-	uint32_t 	m_uiJpegHeight;	
+	uint32_t 	m_uiJpegHeight;		
 } S_RTSP_CONFIG;
 
 #endif	// __PLUGIN_RTSP_H___

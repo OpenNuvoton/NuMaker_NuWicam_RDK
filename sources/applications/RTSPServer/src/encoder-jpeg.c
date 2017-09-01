@@ -47,27 +47,28 @@ struct jpeg_encoder {
 	pthread_t thread;
 	int running;
 	int bitrate;
-	uint32_t u32VinWidth;
-	uint32_t u32VinHeight;
+	
+	uint32_t u32VinPlannerWidth;
+	uint32_t u32VinPlannerHeight;
+	uint32_t u32VinPacketWidth;
+	uint32_t u32VinPacketHeight;
+	
 	uint32_t u32JpegWidth;
 	uint32_t u32JpegHeight;
 };
 
 #define DEF_FRAME_RATE			30
 
-//#define DEF_VIN_WIDTH			640
-//#define DEF_VIN_HEIGHT			480
-
-//#define DEF_JPEG_ENC_WIDTH		640
-//#define DEF_JPEG_ENC_HEIGHT		480
-
-
+// Wayne: Here, you can test to encode picture is outputed from PACKET PIPE.
+#define DEF_TEST_PACKET_PIPE	0
 
 static void *jpeg_loop(void *d)
 {
 	struct jpeg_encoder *en = (struct jpeg_encoder *)d;
-	S_NM_VIDEOCTX sVideoSrcCtx;
-	S_NM_VIDEOCTX sVideoDstCtx;	
+	S_NM_VIDEOCTX sVideoSrcPlannerCtx;
+	S_NM_VIDEOCTX sVideoSrcPacketCtx;
+
+	S_NM_VIDEOCTX sVideoDstCtx;		
 	uint32_t u32FrameSize = 0;
 	struct frame *psJpegFrame = NULL;;
 	int i32MaxFrameSize = get_max_frame_size();
@@ -88,28 +89,46 @@ static void *jpeg_loop(void *d)
 	u32DesireFrameRate =  DEF_FRAME_RATE;
 
 	//Setup video-in context
-	memset(&sVideoSrcCtx, 0x00, sizeof(S_NM_VIDEOCTX));
+	//For planner pipe
+	memset(&sVideoSrcPlannerCtx, 0x00, sizeof(S_NM_VIDEOCTX));
 
-	sVideoSrcCtx.u32Width = en->u32VinWidth;
-	sVideoSrcCtx.u32Height = en->u32VinHeight;
-	sVideoSrcCtx.u32StrideW = sVideoSrcCtx.u32Width;
-	sVideoSrcCtx.u32StrideH = sVideoSrcCtx.u32Height ;
-	sVideoSrcCtx.eColorType = eNM_COLOR_YUV420P;
+	sVideoSrcPlannerCtx.u32Width = en->u32VinPlannerWidth;
+	sVideoSrcPlannerCtx.u32Height = en->u32VinPlannerHeight;
+	sVideoSrcPlannerCtx.u32StrideW = sVideoSrcPlannerCtx.u32Width;
+	sVideoSrcPlannerCtx.u32StrideH = sVideoSrcPlannerCtx.u32Height ;
+	sVideoSrcPlannerCtx.eColorType = eNM_COLOR_YUV420P;
+
+	//For packet pipe
+	memset(&sVideoSrcPacketCtx, 0x00, sizeof(S_NM_VIDEOCTX));
+	sVideoSrcPacketCtx.u32Width 	= en->u32VinPacketWidth;
+	sVideoSrcPacketCtx.u32Height 	= en->u32VinPacketHeight;
+	sVideoSrcPacketCtx.u32StrideW 	= sVideoSrcPacketCtx.u32Width;
+	sVideoSrcPacketCtx.u32StrideH 	= sVideoSrcPacketCtx.u32Height;
+	sVideoSrcPacketCtx.eColorType 	= eNM_COLOR_YUV422;
 
 	//Setup JPEG encode context
 	memset(&sVideoDstCtx, 0x00, sizeof(S_NM_VIDEOCTX));
-
-	sVideoDstCtx.u32Width = en->u32JpegWidth;
-	sVideoDstCtx.u32Height = en->u32JpegHeight;
-	sVideoDstCtx.u32StrideW = sVideoDstCtx.u32Width;
-	sVideoDstCtx.u32StrideH = sVideoDstCtx.u32Height ;
-	sVideoDstCtx.eColorType = eNM_COLOR_YUV420P;
+	
+	#if DEF_TEST_PACKET_PIPE
+		sVideoDstCtx.u32Width 	= en->u32VinPacketWidth;
+		sVideoDstCtx.u32Height 	= en->u32VinPacketHeight;
+		sVideoDstCtx.u32StrideW = sVideoDstCtx.u32Width;
+		sVideoDstCtx.u32StrideH = sVideoDstCtx.u32Height ;
+		sVideoDstCtx.eColorType = eNM_COLOR_YUV420;
+	#else
+		sVideoDstCtx.u32Width 	= en->u32JpegWidth;
+		sVideoDstCtx.u32Height 	= en->u32JpegHeight;
+		sVideoDstCtx.u32StrideW = sVideoDstCtx.u32Width;
+		sVideoDstCtx.u32StrideH = sVideoDstCtx.u32Height ;
+		sVideoDstCtx.eColorType = eNM_COLOR_YUV420P;	
+	#endif
+	
 	sVideoDstCtx.u32FrameRate = DEF_FRAME_RATE;
 	sVideoDstCtx.u32BitRate = en->bitrate;
 		
 	//Open video-in device
 	ERRCODE eVinErr;
-	eVinErr = InitV4LDevice(&sVideoSrcCtx);
+	eVinErr = InitV4LDevice(&sVideoSrcPlannerCtx, &sVideoSrcPacketCtx);
 	if(eVinErr != ERR_V4L_SUCCESS){
 		printf("Open video-in device failed \n");
 		return 0;
@@ -141,17 +160,21 @@ static void *jpeg_loop(void *d)
 			usleep(10000);
 			continue;
 		}
+		
+		// sVideoSrcPlannerCtx for encoding, sVideoSrcPacketCtx for other purpose.
+		eVinErr = ReadV4LPictures(&sVideoSrcPlannerCtx, &sVideoSrcPacketCtx);
 
-
-		//Read raw picture
-		eVinErr = ReadV4LPicture(&sVideoSrcCtx);
 		if(eVinErr != ERR_V4L_SUCCESS){
 			continue;
 		}
 		u64CurTime = utils_get_ms_time();
 
-		//Encode JPEG
-		i32JpegRet = JpegEnc(&sVideoSrcCtx, &sVideoDstCtx);
+		//Encode JPEG from packet pipe
+		#if DEF_TEST_PACKET_PIPE
+			i32JpegRet = JpegEnc(&sVideoSrcPacketCtx, &sVideoDstCtx);
+		#else
+			i32JpegRet = JpegEnc(&sVideoSrcPlannerCtx, &sVideoDstCtx);
+		#endif
 
 		while((utils_get_ms_time() == u64CurTime));
 
@@ -280,20 +303,38 @@ static int set_pipe_num(int num_tokens, struct token *tokens, void *d)
 	return 0;
 }
 
-static int set_vin_width(int num_tokens, struct token *tokens, void *d)
+static int set_vin_planner_width(int num_tokens, struct token *tokens, void *d)
 {
 	struct jpeg_encoder *en = (struct jpeg_encoder *)d;
 
-	en->u32VinWidth = tokens[1].v.num;
+	en->u32VinPlannerWidth = tokens[1].v.num;
 
 	return 0;
 }
 
-static int set_vin_height(int num_tokens, struct token *tokens, void *d)
+static int set_vin_planner_height(int num_tokens, struct token *tokens, void *d)
 {
 	struct jpeg_encoder *en = (struct jpeg_encoder *)d;
 
-	en->u32VinHeight = tokens[1].v.num;
+	en->u32VinPlannerHeight = tokens[1].v.num;
+
+	return 0;
+}
+
+static int set_vin_packet_width(int num_tokens, struct token *tokens, void *d)
+{
+	struct jpeg_encoder *en = (struct jpeg_encoder *)d;
+
+	en->u32VinPacketWidth = tokens[1].v.num;
+
+	return 0;
+}
+
+static int set_vin_packet_height(int num_tokens, struct token *tokens, void *d)
+{
+	struct jpeg_encoder *en = (struct jpeg_encoder *)d;
+
+	en->u32VinPacketHeight = tokens[1].v.num;
 
 	return 0;
 }
@@ -350,8 +391,10 @@ static struct statement config_statements[] = {
 	{ "output", set_output, 1, 1, { TOKEN_STR } },
 	{ "bitrate", set_bitrate_num, 1, 1, { TOKEN_NUM } },
 	{ "pipe", set_pipe_num, 1, 1, { TOKEN_NUM } },
-	{ "vin_width", set_vin_width, 1, 1, { TOKEN_NUM } },
-	{ "vin_height", set_vin_height, 1, 1, { TOKEN_NUM } },
+	{ "vin_planner_width", set_vin_planner_width, 1, 1, { TOKEN_NUM } },
+	{ "vin_planner_height", set_vin_planner_height, 1, 1, { TOKEN_NUM } },
+	{ "vin_packet_width", set_vin_packet_width, 1, 1, { TOKEN_NUM } },
+	{ "vin_packet_height", set_vin_packet_height, 1, 1, { TOKEN_NUM } },
 	{ "jpeg_width", set_jpeg_width, 1, 1, { TOKEN_NUM } },
 	{ "jpeg_height", set_jpeg_height, 1, 1, { TOKEN_NUM } },
 	/* empty terminator -- do not remove */

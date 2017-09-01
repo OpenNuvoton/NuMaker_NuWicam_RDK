@@ -54,9 +54,44 @@ static uint64_t s_u64PrevTS = 0;
 static uint64_t s_u32VidInFirstTS = 0;
 static uint32_t s_u32VidInFrames = 0;
 
+static ERRCODE SetPacketPipeWindow(
+	S_NM_VIDEOCTX *psVideoCtx )
+{
+	int err = 0;
+	struct video_window sVidWin;
+	
+	if ( s_sVidData.i32VidFD < 0 )
+	{
+		err = -1;
+		goto FAIL_SETVIEWWIN;
+	}
+	
+	sVidWin.width 		= psVideoCtx->u32Width;
+	sVidWin.height 		= psVideoCtx->u32Height;
+	sVidWin.x 			= 0;		
+	sVidWin.y 			= 0;
+	sVidWin.chromakey 	= -1;
+	sVidWin.flags 		= 0;
+	
+	if (ioctl(s_sVidData.i32VidFD, VIDIOCSWIN, &sVidWin) < 0) {
+		printf("User VIDIOCSWIN error\n");
+		err = -1;
+		goto FAIL_SETVIEWWIN;
+	}
+
+	printf("[%s] Width , Height = %d, %d\n", 	__FUNCTION__, sVidWin.width, 	sVidWin.height);
+	printf("[%s] X , Y = %d, %d\n", 			__FUNCTION__, sVidWin.x, 		sVidWin.y);
+	
+	return err;
+	
+FAIL_SETVIEWWIN:
+	return err;
+}
+
 ERRCODE
 InitV4LDevice(
-	S_NM_VIDEOCTX *psVideoSrcCtx
+	S_NM_VIDEOCTX *psVideoSrcPlannerCtx, 
+	S_NM_VIDEOCTX *psVideoSrcPacketCtx	
 )
 {
 	int i32VidFD;
@@ -85,8 +120,8 @@ InitV4LDevice(
 		goto fail;
 	}
 
-	i32Width = psVideoSrcCtx->u32Width;
-	i32Height = psVideoSrcCtx->u32Height;
+	i32Width = psVideoSrcPlannerCtx->u32Width;
+	i32Height = psVideoSrcPlannerCtx->u32Height;
 
 	//check video width and height
 	struct v4l2_cropcap sVinCropCap;
@@ -94,19 +129,20 @@ InitV4LDevice(
 	if (ioctl(i32VidFD, VIDIOC_CROPCAP, &sVinCropCap) == 0) {
 		if(i32Width > sVinCropCap.defrect.width){
 			i32Width = sVinCropCap.defrect.width;
-			psVideoSrcCtx->u32Width = sVinCropCap.defrect.width;
-			psVideoSrcCtx->u32StrideW = sVinCropCap.defrect.width;				
+			psVideoSrcPlannerCtx->u32Width = sVinCropCap.defrect.width;
+			psVideoSrcPlannerCtx->u32StrideW = sVinCropCap.defrect.width;				
 			printf("Specified image width over sensor supported. Redirect to %d \n", i32Width);
 		}
 
 		if(i32Height > sVinCropCap.defrect.height){
 			i32Height = sVinCropCap.defrect.height;
-			psVideoSrcCtx->u32Height = sVinCropCap.defrect.height;
-			psVideoSrcCtx->u32StrideH = sVinCropCap.defrect.height;				
+			psVideoSrcPlannerCtx->u32Height = sVinCropCap.defrect.height;
+			psVideoSrcPlannerCtx->u32StrideH = sVinCropCap.defrect.height;				
 			printf("Specified image height over sensor supported. Redirect to %d \n", i32Height);
 		}
 	}
-
+	
+    /* get picture properties of planner pipe */
 	ioctl(i32VidFD, VIDIOCGPICT, &sPict);
 	sPict.palette = VIDEO_PALETTE_YUV422;
 	sPict.depth= 16;
@@ -116,8 +152,8 @@ InitV4LDevice(
 		goto fail;
 	}
 
+	/* try to use read based access */
 	if (ioctl(i32VidFD, VIDIOCGMBUF, &s_sVidData.sVidMBufs) < 0) {
-		/* try to use read based access */
 		int val;
 
 		s_sVidData.sVidWin.width = i32Width;
@@ -147,12 +183,13 @@ InitV4LDevice(
 	else {
 		s_sVidData.pu8VidBuf = mmap(0, s_sVidData.sVidMBufs.size, PROT_READ|PROT_WRITE, MAP_SHARED, i32VidFD, 0);
 		if ((unsigned char*)-1 == s_sVidData.pu8VidBuf) {
+			/* for non-mmu arch */
 			s_sVidData.pu8VidBuf = mmap(0, s_sVidData.sVidMBufs.size, PROT_READ|PROT_WRITE, MAP_PRIVATE, i32VidFD, 0);
 			if ((unsigned char*)-1 == s_sVidData.pu8VidBuf) {
 				DEBUG_PRINT("mmap: %s\n", strerror(errno));
 				err = ERR_V4L_MMAP;
 				goto fail;
-			}
+			} 
 		}
 		s_sVidData.i32VidFrame = 0;
 
@@ -161,7 +198,7 @@ InitV4LDevice(
 		s_sVidData.sVidMMap.height = i32Height;
 		s_sVidData.sVidMMap.width = i32Width;
 
-		if(psVideoSrcCtx->eColorType == eNM_COLOR_YUV420P)
+		if(psVideoSrcPlannerCtx->eColorType == eNM_COLOR_YUV420P)
 			s_sVidData.sVidMMap.format = VIDEO_PALETTE_YUV420P;
 		else
 			s_sVidData.sVidMMap.format = VIDEO_PALETTE_YUV422P;
@@ -181,6 +218,10 @@ InitV4LDevice(
 	}
 	s_sVidData.i32FrameSize = s_sVidData.sVidMMap.width  * s_sVidData.sVidMMap.height* 2;
 	s_sVidData.i32VidFD = i32VidFD;
+	
+	// Set packet window
+	SetPacketPipeWindow(psVideoSrcPacketCtx);
+	
 	return err;
 fail:
 	if (i32VidFD >= 0)
@@ -188,10 +229,11 @@ fail:
 	return err;
 }
 
-
+// Wayne: Support both planner and packet format
 ERRCODE
-ReadV4LPicture(
-	S_NM_VIDEOCTX *psVideoSrcCtx
+ReadV4LPictures(
+	S_NM_VIDEOCTX *psVideoSrcPlannerCtx, 
+	S_NM_VIDEOCTX *psVideoSrcPacketCtx
 )
 {
 	int32_t i32TryCnt = 0;
@@ -207,20 +249,41 @@ ReadV4LPicture(
 //		}
 	}
 
-	sV4L2Buff.index = s_sVidData.i32VidFrame;
-	ioctl(s_sVidData.i32VidFD, VIDIOCGCAPTIME, &sV4L2Buff);
-	psVideoSrcCtx->u64DataTime = (uint64_t)sV4L2Buff.timestamp.tv_sec * 1000000 + (uint64_t)sV4L2Buff.timestamp.tv_usec;
-	psVideoSrcCtx->pDataPAddr = (void *)sV4L2Buff.m.userptr;	/* encode physical address */
-    
-	if(s_u64PrevTS != 0){
-		if((psVideoSrcCtx->u64DataTime - s_u64PrevTS) > 3000000)
-			DEBUG_PRINT(": V4L get raw picture over %"PRId64" us\n", (psVideoSrcCtx->u64DataTime - s_u64PrevTS));			
+	if ( psVideoSrcPlannerCtx )  // For planner pipe
+	{
+		sV4L2Buff.index = s_sVidData.i32VidFrame;
+		ioctl(s_sVidData.i32VidFD, VIDIOCGCAPTIME, &sV4L2Buff);
+		psVideoSrcPlannerCtx->u64DataTime = (uint64_t)sV4L2Buff.timestamp.tv_sec * 1000000 + (uint64_t)sV4L2Buff.timestamp.tv_usec;
+		psVideoSrcPlannerCtx->pDataPAddr = (void *)sV4L2Buff.m.userptr;	/* encode physical address */
+		
+		if(s_u64PrevTS != 0){
+			if((psVideoSrcPlannerCtx->u64DataTime - s_u64PrevTS) > 3000000)
+				DEBUG_PRINT(": V4L get raw picture over %"PRId64" us\n", (psVideoSrcPlannerCtx->u64DataTime - s_u64PrevTS));			
+		}
+		s_u64PrevTS = psVideoSrcPlannerCtx->u64DataTime;
+		psVideoSrcPlannerCtx->pDataVAddr = s_sVidData.pu8VidBuf + s_sVidData.sVidMBufs.offsets[s_sVidData.i32VidFrame];
 	}
-	s_u64PrevTS = psVideoSrcCtx->u64DataTime;
-	psVideoSrcCtx->pDataVAddr = s_sVidData.pu8VidBuf + s_sVidData.sVidMBufs.offsets[s_sVidData.i32VidFrame];
 
+	if ( psVideoSrcPacketCtx )  // For packet pipe
+	{
+		S_PIPE_INFO	s_sPacketInfo;
+		memset((void*)&s_sPacketInfo, 0, sizeof(S_PIPE_INFO));
+
+		// Query current packet farm.
+		if ( !QueryV4LPacketInformation(&s_sPacketInfo) )
+		{		
+			psVideoSrcPacketCtx->u64DataTime 	= (uint64_t)sV4L2Buff.timestamp.tv_sec * 1000000 + (uint64_t)sV4L2Buff.timestamp.tv_usec;
+			psVideoSrcPacketCtx->pDataPAddr 	= (void *)s_sPacketInfo.i32CurrPipePhyAddr;	/* encode physical address */
+			psVideoSrcPacketCtx->pDataVAddr 	= s_sVidData.pu8VidBuf + s_sVidData.sVidMBufs.offsets[s_sVidData.sVidMBufs.frames+s_sVidData.i32VidFrame];		
+
+			// printf("[No.%d]Current Packet buffer physical address = 0x%x, size=%d Bytes\n", \
+										s_sVidData.sVidMBufs.frames+s_sVidData.i32VidFrame, \
+										s_sPacketInfo.i32CurrPipePhyAddr, \
+										s_sPacketInfo.i32PipeBufSize);
+		}
+	}
+	
 #if defined (STATISTIC)
-
 	if(s_u32VidInFrames == 0){
 		s_u32VidInFirstTS = s_u64PrevTS;
 	}
@@ -235,7 +298,6 @@ ReadV4LPicture(
 
 	return ERR_V4L_SUCCESS;
 }
-
 
 ERRCODE
 TriggerV4LNextFrame(void)
@@ -579,8 +641,8 @@ ERRCODE QueryV4LPlanarInformation(S_PIPE_INFO* ps_planarInfo)
 {
 	ERRCODE err = ERR_V4L_SUCCESS;
 	
-	if (0 != ioctl (s_sVidData.i32VidFD, VIDIOC_G_PLANAR_INFO, ps_planarInfo)) {//Get packet offset releate to s_sVidData.sVidMBufs
-		printf("VIDIOC_G_PACKET_INFO fail\n");
+	if (0 != ioctl (s_sVidData.i32VidFD, VIDIOC_G_PLANAR_INFO, ps_planarInfo)) {//Get planner offset releate to s_sVidData.sVidMBufs
+		printf("VIDIOC_G_PLANNER_INFO fail\n");
 		return -1; 
 	}
 	return err;
@@ -654,14 +716,8 @@ fail:
 }
 
 
-/*
-typedef struct 
-{
-	int32_t i32PipeBufNo;
-	int32_t i32PipeBufSize;
-	int32_t i32CurrPipePhyAddr;
-}S_PIPE_INFO;
-*/
+
+
 
 #define __DUMP_PACKET__
 int dumpV4LBuffer(void)
