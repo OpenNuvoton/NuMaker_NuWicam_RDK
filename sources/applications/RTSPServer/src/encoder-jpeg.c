@@ -55,6 +55,7 @@ struct jpeg_encoder {
 	
 	uint32_t u32JpegWidth;
 	uint32_t u32JpegHeight;
+	uint32_t u32JpegPacketPipe;
 };
 
 #define DEF_FRAME_RATE			30
@@ -109,19 +110,20 @@ static void *jpeg_loop(void *d)
 	//Setup JPEG encode context
 	memset(&sVideoDstCtx, 0x00, sizeof(S_NM_VIDEOCTX));
 	
-	#if DEF_TEST_PACKET_PIPE
+	if ( en->u32JpegPacketPipe ) {
+		//Test
 		sVideoDstCtx.u32Width 	= en->u32VinPacketWidth;
 		sVideoDstCtx.u32Height 	= en->u32VinPacketHeight;
 		sVideoDstCtx.u32StrideW = sVideoDstCtx.u32Width;
 		sVideoDstCtx.u32StrideH = sVideoDstCtx.u32Height ;
 		sVideoDstCtx.eColorType = eNM_COLOR_YUV420;
-	#else
+	} else {
 		sVideoDstCtx.u32Width 	= en->u32JpegWidth;
 		sVideoDstCtx.u32Height 	= en->u32JpegHeight;
 		sVideoDstCtx.u32StrideW = sVideoDstCtx.u32Width;
 		sVideoDstCtx.u32StrideH = sVideoDstCtx.u32Height ;
 		sVideoDstCtx.eColorType = eNM_COLOR_YUV420P;	
-	#endif
+	}
 	
 	sVideoDstCtx.u32FrameRate = DEF_FRAME_RATE;
 	sVideoDstCtx.u32BitRate = en->bitrate;
@@ -170,11 +172,10 @@ static void *jpeg_loop(void *d)
 		u64CurTime = utils_get_ms_time();
 
 		//Encode JPEG from packet pipe
-		#if DEF_TEST_PACKET_PIPE
+		if ( en->u32JpegPacketPipe )
 			i32JpegRet = JpegEnc(&sVideoSrcPacketCtx, &sVideoDstCtx);
-		#else
-			i32JpegRet = JpegEnc(&sVideoSrcPlannerCtx, &sVideoDstCtx);
-		#endif
+		else
+			i32JpegRet = JpegEnc(&sVideoSrcPlannerCtx, &sVideoDstCtx);		
 
 		while((utils_get_ms_time() == u64CurTime));
 
@@ -357,6 +358,15 @@ static int set_jpeg_height(int num_tokens, struct token *tokens, void *d)
 	return 0;
 }
 
+static int set_jpeg_packet(int num_tokens, struct token *tokens, void *d)
+{
+	struct jpeg_encoder *en = (struct jpeg_encoder *)d;
+
+	en->u32JpegPacketPipe = tokens[1].v.num;
+
+	return 0;
+}
+
 static int set_bitrate_num(int num_tokens, struct token *tokens, void *d)
 {
 	struct jpeg_encoder *en = (struct jpeg_encoder *)d;
@@ -397,6 +407,7 @@ static struct statement config_statements[] = {
 	{ "vin_packet_height", set_vin_packet_height, 1, 1, { TOKEN_NUM } },
 	{ "jpeg_width", set_jpeg_width, 1, 1, { TOKEN_NUM } },
 	{ "jpeg_height", set_jpeg_height, 1, 1, { TOKEN_NUM } },
+	{ "jpeg_packet", set_jpeg_packet, 1, 1, { TOKEN_NUM } },	
 	/* empty terminator -- do not remove */
 	{ NULL, NULL, 0, 0, {} }
 };

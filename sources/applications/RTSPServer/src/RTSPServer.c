@@ -51,8 +51,10 @@ volatile static S_RTSP_CONFIG s_sConfig = {
 	.m_uiVinPlannerHeight = 480,
 	.m_uiVinPacketWidth = 8,	//For saving memory bandwidth
 	.m_uiVinPacketHeight = 8,	//For saving memory bandwidth
+	.m_uiVinPacketHeight = 8,	//For saving memory bandwidth
 	.m_uiJpegWidth = 640,
 	.m_uiJpegHeight = 480,
+	.m_uiJpegPacketPipe = 0,
 };
 
 static void ShowUsage()
@@ -65,6 +67,7 @@ static void ShowUsage()
 	printf("-i Jpeg encode width \n");
 	printf("-e Jpeg encode height\n");
 	printf("-b Jpeg bit rate \n");
+	printf("-p Set JPEG streaming using packet pipe\n");	
 }
 
 int
@@ -74,7 +77,7 @@ main(int argc, char **argv)
 	int32_t i32Opt;
 
 	// Parse options
-	while ((i32Opt = getopt(argc, argv, "w:d:x:y:i:e:b:h")) != -1) {
+	while ((i32Opt = getopt(argc, argv, "w:d:x:y:i:e:b:p:h")) != -1) {
 		switch (i32Opt) {
 			case 'w':
 			{
@@ -187,6 +190,15 @@ main(int argc, char **argv)
 					s_sConfig.m_uiMJPGCamBitRate = u32BitRate;				
 			}
 			break;
+			case 'p':
+			{
+				uint32_t u32IsPacketPipe = atoi(optarg);
+				
+				if (u32IsPacketPipe)
+					s_sConfig.m_uiJpegPacketPipe = 1;				
+			}
+			break;
+			
 			case 'h':
 			default:
 				ShowUsage();
