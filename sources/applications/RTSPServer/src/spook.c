@@ -248,6 +248,13 @@ static int jpeg_config(
 
 		run_context_statement(pvJpegCtx, pvCtxData, tokens, 2);
 
+		tokens[0].type = TOKEN_STR;
+		strcpy(tokens[0].v.str, "jpeg_packet");
+		tokens[1].type = TOKEN_NUM;
+		tokens[1].v.num = psConfig->m_uiJpegPacketPipe;
+
+		run_context_statement(pvJpegCtx, pvCtxData, tokens, 2);
+		
 		i32Ret = run_context_end_block(pvJpegCtx, pvCtxData);
 
 		if (i32Ret < 0)

@@ -51,7 +51,6 @@ volatile static S_RTSP_CONFIG s_sConfig = {
 	.m_uiVinPlannerHeight = 480,
 	.m_uiVinPacketWidth = 8,	//For saving memory bandwidth
 	.m_uiVinPacketHeight = 8,	//For saving memory bandwidth
-	.m_uiVinPacketHeight = 8,	//For saving memory bandwidth
 	.m_uiJpegWidth = 640,
 	.m_uiJpegHeight = 480,
 	.m_uiJpegPacketPipe = 0,
