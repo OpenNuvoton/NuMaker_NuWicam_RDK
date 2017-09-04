@@ -60,9 +60,6 @@ struct jpeg_encoder {
 
 #define DEF_FRAME_RATE			30
 
-// Wayne: Here, you can test to encode picture is outputed from PACKET PIPE.
-#define DEF_TEST_PACKET_PIPE	0
-
 static void *jpeg_loop(void *d)
 {
 	struct jpeg_encoder *en = (struct jpeg_encoder *)d;
@@ -151,7 +148,7 @@ static void *jpeg_loop(void *d)
 
 	//Start video-in capture
 	StartV4LCapture();
-
+	
 	for (;;) {
 		if (!en->running) {
 			usleep(10000);

@@ -76,7 +76,7 @@ main(int argc, char **argv)
 	int32_t i32Opt;
 
 	// Parse options
-	while ((i32Opt = getopt(argc, argv, "w:d:x:y:i:e:b:p:h")) != -1) {
+	while ((i32Opt = getopt(argc, argv, "w:d:x:y:i:e:b:ph")) != -1) {
 		switch (i32Opt) {
 			case 'w':
 			{
@@ -189,13 +189,9 @@ main(int argc, char **argv)
 					s_sConfig.m_uiMJPGCamBitRate = u32BitRate;				
 			}
 			break;
+
 			case 'p':
-			{
-				uint32_t u32IsPacketPipe = atoi(optarg);
-				
-				if (u32IsPacketPipe)
-					s_sConfig.m_uiJpegPacketPipe = 1;				
-			}
+				s_sConfig.m_uiJpegPacketPipe = 1;				
 			break;
 			
 			case 'h':

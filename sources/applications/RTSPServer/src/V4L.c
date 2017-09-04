@@ -241,12 +241,12 @@ ReadV4LPictures(
 	
 	while (ioctl(s_sVidData.i32VidFD, VIDIOCSYNC, &s_sVidData.i32VidFrame) < 0 &&
 		(errno == EAGAIN || errno == EINTR)){
-//		usleep(10000);
-//		i32TryCnt ++;
-//		if(i32TryCnt >= 100){
-//			printf(": V4L fail\n");
-//			return ERR_V4L_VID_SYNC;
-//		}
+		usleep(2000);
+		i32TryCnt ++;
+		if(i32TryCnt >= 500){
+			printf(": V4L fail\n");
+			return ERR_V4L_VID_SYNC;
+		}
 	}
 
 	if ( psVideoSrcPlannerCtx )  // For planner pipe
@@ -276,11 +276,12 @@ ReadV4LPictures(
 			psVideoSrcPacketCtx->pDataPAddr 	= (void *)s_sPacketInfo.i32CurrPipePhyAddr;	/* encode physical address */
 			psVideoSrcPacketCtx->pDataVAddr 	= s_sVidData.pu8VidBuf + s_sVidData.sVidMBufs.offsets[s_sVidData.sVidMBufs.frames+s_sVidData.i32VidFrame];		
 
-			// printf("[No.%d]Current Packet buffer physical address = 0x%x, size=%d Bytes\n", \
+			//printf("[No.%d]Current Packet buffer physical address = 0x%x, size=%d Bytes\n", \
 										s_sVidData.sVidMBufs.frames+s_sVidData.i32VidFrame, \
 										s_sPacketInfo.i32CurrPipePhyAddr, \
 										s_sPacketInfo.i32PipeBufSize);
-		}
+		} else 
+			return ERR_V4L_VID_SYNC;
 	}
 	
 #if defined (STATISTIC)
