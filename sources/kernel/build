@@ -58,8 +58,10 @@ fi
 
 cd $CUR_PATH
 # Wi-Fi RTL8189FS driver
-if [ -d "./kernel_modules/rtl8189FS_linux_v4.3.24" ]; then
-        cd kernel_modules/rtl8189FS_linux_v4.3.24
+if [ -d "./kernel_modules/rtl8189FS_linux_v4.3.24.8" ]; then
+        cd kernel_modules/rtl8189FS_linux_v4.3.24.8
         ./build.sh
         cd $CUR_PATH
 fi
+
+
