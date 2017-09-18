@@ -40,6 +40,11 @@
 #include "V4L.h"
 #include "JpegEnc.h"
 
+#include "Digit_8_16.h"
+#include "TextOverlap.h"	//For overlapping
+#define DEF_MAX_OVERLAP_TEXT			32
+#define DEF_FRAME_RATE			30
+
 struct jpeg_encoder {
 	struct stream *output;
 	int format;
@@ -56,9 +61,161 @@ struct jpeg_encoder {
 	uint32_t u32JpegWidth;
 	uint32_t u32JpegHeight;
 	uint32_t u32JpegPacketPipe;
+	uint32_t u32Overlapping;
+	
 };
 
-#define DEF_FRAME_RATE			30
+void OverlapText(
+	H_TEXT_OVERLAP hTextOverlap,
+	S_NM_VIDEOCTX *psNMVideoCtx,
+	uint8_t *pu8BGImgAddr,
+	char *pchOverlapStr
+)
+{
+	uint32_t u32StrLen = strlen(pchOverlapStr);
+	int32_t i;
+	uint8_t *apu8TextAddr[DEF_MAX_OVERLAP_TEXT];
+	uint32_t u32BGWidth;
+	uint32_t u32BGHeight;
+
+	E_IMGPROC_COLOR_FORMAT eColorFmt = eIMGPROC_YUV422;
+
+	switch ( psNMVideoCtx->eColorType )
+	{
+		case eNM_COLOR_YUV420P:
+			eColorFmt = eIMGPROC_YUV420P;
+		break;
+		
+		case eNM_COLOR_YUV422:
+			eColorFmt = eIMGPROC_YUV422;
+		break;
+		
+		default:
+			printf("Unsupported\n!");
+			return;
+	}
+
+	// Code book
+	for (i = 0 ; i < u32StrLen; i++) {
+		switch (pchOverlapStr[i]) {
+		case '0':
+			apu8TextAddr[i] = (uint8_t *)s_achPic_8_16_D0;
+			break;
+
+		case '1':
+			apu8TextAddr[i] = (uint8_t *)s_achPic_8_16_D1;
+			break;
+
+		case '2':
+			apu8TextAddr[i] = (uint8_t *)s_achPic_8_16_D2;
+			break;
+
+		case '3':
+			apu8TextAddr[i] = (uint8_t *)s_achPic_8_16_D3;
+			break;
+
+		case '4':
+			apu8TextAddr[i] = (uint8_t *)s_achPic_8_16_D4;
+			break;
+
+		case '5':
+			apu8TextAddr[i] = (uint8_t *)s_achPic_8_16_D5;
+			break;
+
+		case '6':
+			apu8TextAddr[i] = (uint8_t *)s_achPic_8_16_D6;
+			break;
+
+		case '7':
+			apu8TextAddr[i] = (uint8_t *)s_achPic_8_16_D7;
+			break;
+
+		case '8':
+			apu8TextAddr[i] = (uint8_t *)s_achPic_8_16_D8;
+			break;
+
+		case '9':
+			apu8TextAddr[i] = (uint8_t *)s_achPic_8_16_D9;
+			break;
+
+		case ':':
+			apu8TextAddr[i] = (uint8_t *)s_achPic_8_16_Colon;
+			break;
+
+		case '/':
+			apu8TextAddr[i] = (uint8_t *)s_achPic_8_16_Slash;
+			break;
+
+		default:
+			apu8TextAddr[i] = (uint8_t *)s_achPic_8_16_Blank;
+			break;
+		}
+	}
+
+	u32BGWidth = psNMVideoCtx->u32Width;
+	u32BGHeight = psNMVideoCtx->u32Height;
+
+	TextOverlap_Overlap(hTextOverlap, apu8TextAddr, u32StrLen,
+						(uint8_t *) pu8BGImgAddr, eColorFmt,
+						u32BGWidth,
+						u32BGHeight,
+						(psNMVideoCtx->u32Width - u32StrLen * DIGIT_8_16_WIDTH) / 2,
+						2 * DIGIT_8_16_HEIGHT);
+}
+
+static void
+DateOverlap(
+	H_TEXT_OVERLAP hTextOverlap,
+	S_NM_VIDEOCTX *psNMVideoCtx
+)
+{
+	//date Overlap
+	char achDateTime[20];
+	char achCurDateTime[17];
+	time_t i32CurTime;
+	struct tm *psCurTm;
+	uint32_t u32Year;
+	uint8_t *pu8BGImgAddr = NULL;
+
+	if (hTextOverlap == eTEXT_OVERLAP_INVALID_HANDLE)
+		return;
+
+	if (psNMVideoCtx == NULL ||
+			psNMVideoCtx->pDataVAddr == NULL )
+		return;
+
+	pu8BGImgAddr = psNMVideoCtx->pDataVAddr;
+
+	i32CurTime = time(NULL);
+	psCurTm = localtime(&i32CurTime);
+	u32Year = psCurTm->tm_year + 1900;   		//since 1900
+
+	snprintf((char *)&achCurDateTime[0x0], 16, "%04d%02d%02d%02d%02d%02d00",
+			 u32Year,
+			 psCurTm->tm_mon + 1,
+			 psCurTm->tm_mday,
+			 psCurTm->tm_hour,
+			 psCurTm->tm_min,
+			 psCurTm->tm_sec);
+	achCurDateTime[16] = '\0';
+
+	memcpy(&achDateTime[0], achCurDateTime, 4); //year
+	achDateTime[4] = '/';
+	memcpy(&achDateTime[5], achCurDateTime + 4, 2); //mouth
+	achDateTime[7] = '/';
+	memcpy(&achDateTime[8], achCurDateTime + 6, 2); //day
+
+	achDateTime[10] = ' ';
+	memcpy(&achDateTime[11], achCurDateTime + 8, 2); //hour
+	achDateTime[13] = ':';
+	memcpy(&achDateTime[14], achCurDateTime + 10, 2); //min
+	achDateTime[16] = ':';
+	memcpy(&achDateTime[17], achCurDateTime + 12, 2); //sec
+	achDateTime[19] = ' ';
+	achDateTime[20] = '\0';
+
+	OverlapText(hTextOverlap, psNMVideoCtx, pu8BGImgAddr, achDateTime);
+}
 
 static void *jpeg_loop(void *d)
 {
@@ -82,6 +239,9 @@ static void *jpeg_loop(void *d)
 	uint32_t u32DesireFrameRate;
 
 	uint64_t u64NextFrameTime;
+
+
+	H_TEXT_OVERLAP hTextOverlap=eTEXT_OVERLAP_INVALID_HANDLE;
 
 	u32DesireBitRate = en->bitrate;
 	u32DesireFrameRate =  DEF_FRAME_RATE;
@@ -114,12 +274,28 @@ static void *jpeg_loop(void *d)
 		sVideoDstCtx.u32StrideW = sVideoDstCtx.u32Width;
 		sVideoDstCtx.u32StrideH = sVideoDstCtx.u32Height ;
 		sVideoDstCtx.eColorType = eNM_COLOR_YUV420;
+		
+		// Overlapping instance initialization
+		if ( en->u32Overlapping )
+			hTextOverlap = TextOverlap_Init(DIGIT_8_16_WIDTH,
+									DIGIT_8_16_HEIGHT,
+									eIMGPROC_YUV422,
+									DEF_MAX_OVERLAP_TEXT,
+									0xFF, 0x80, 0x80);
 	} else {
 		sVideoDstCtx.u32Width 	= en->u32JpegWidth;
 		sVideoDstCtx.u32Height 	= en->u32JpegHeight;
 		sVideoDstCtx.u32StrideW = sVideoDstCtx.u32Width;
 		sVideoDstCtx.u32StrideH = sVideoDstCtx.u32Height ;
 		sVideoDstCtx.eColorType = eNM_COLOR_YUV420P;	
+		
+		// Overlapping instance initialization
+		if ( en->u32Overlapping )
+			hTextOverlap = TextOverlap_Init(DIGIT_8_16_WIDTH,
+									DIGIT_8_16_HEIGHT,
+									eIMGPROC_YUV420P,
+									DEF_MAX_OVERLAP_TEXT,
+									0xFF, 0x80, 0x80);		
 	}
 	
 	sVideoDstCtx.u32FrameRate = DEF_FRAME_RATE;
@@ -140,6 +316,9 @@ static void *jpeg_loop(void *d)
 		printf("Open JPEG encoder failed \n");
 		return 0;
 	}
+
+	if (hTextOverlap == eTEXT_OVERLAP_INVALID_HANDLE)
+		printf("Overlapping is disable.\n");
 
 	u64StartBitRateTime = utils_get_ms_time();
 	u64NextFrameTime = utils_get_ms_time();
@@ -166,6 +345,16 @@ static void *jpeg_loop(void *d)
 		if(eVinErr != ERR_V4L_SUCCESS){
 			continue;
 		}
+
+		//Overlapping
+		if ( en->u32Overlapping )
+		{
+			if ( en->u32JpegPacketPipe )
+				DateOverlap( hTextOverlap, &sVideoSrcPacketCtx);				
+			else
+				DateOverlap( hTextOverlap, &sVideoSrcPlannerCtx);				
+		}
+		
 		u64CurTime = utils_get_ms_time();
 
 		//Encode JPEG from packet pipe
@@ -180,7 +369,7 @@ static void *jpeg_loop(void *d)
 		TriggerV4LNextFrame();
 
 		i32JpegRet = WaitJpegEncDone(&sVideoDstCtx);
-
+		
 		if(i32JpegRet <= 0){
 			continue;
 		}
@@ -243,6 +432,10 @@ static void *jpeg_loop(void *d)
 
 	FinializeV4LDevice();
 	FinializeJpegDevice();
+
+	if ( en->u32Overlapping )
+		if (hTextOverlap != eTEXT_OVERLAP_INVALID_HANDLE)
+			TextOverlap_UnInit(&hTextOverlap);
 
 	return NULL;
 }
@@ -364,6 +557,15 @@ static int set_jpeg_packet(int num_tokens, struct token *tokens, void *d)
 	return 0;
 }
 
+static int set_overlapping(int num_tokens, struct token *tokens, void *d)
+{
+	struct jpeg_encoder *en = (struct jpeg_encoder *)d;
+
+	en->u32Overlapping = tokens[1].v.num;
+
+	return 0;
+}
+
 static int set_bitrate_num(int num_tokens, struct token *tokens, void *d)
 {
 	struct jpeg_encoder *en = (struct jpeg_encoder *)d;
@@ -405,6 +607,7 @@ static struct statement config_statements[] = {
 	{ "jpeg_width", set_jpeg_width, 1, 1, { TOKEN_NUM } },
 	{ "jpeg_height", set_jpeg_height, 1, 1, { TOKEN_NUM } },
 	{ "jpeg_packet", set_jpeg_packet, 1, 1, { TOKEN_NUM } },	
+	{ "overlapping", set_overlapping, 1, 1, { TOKEN_NUM } },	
 	/* empty terminator -- do not remove */
 	{ NULL, NULL, 0, 0, {} }
 };

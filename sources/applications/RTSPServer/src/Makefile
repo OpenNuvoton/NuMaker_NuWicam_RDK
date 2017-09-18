@@ -56,8 +56,10 @@ OBJS =	RTSPServer.o \
 		JpegEnc.o \
 		encoder-jpeg.o \
 		OSS.o \
-		encoder-alaw.o
-
+		encoder-alaw.o \
+		ImgOverlap.o \
+		TextOverlap.o
+		
 all: progs
 
 progs: RTSPServer

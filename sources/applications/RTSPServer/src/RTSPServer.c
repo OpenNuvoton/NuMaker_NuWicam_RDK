@@ -54,6 +54,7 @@ volatile static S_RTSP_CONFIG s_sConfig = {
 	.m_uiJpegWidth = 640,
 	.m_uiJpegHeight = 480,
 	.m_uiJpegPacketPipe = 0,
+	.m_uiOverlapping = 0,
 };
 
 static void ShowUsage()
@@ -67,6 +68,7 @@ static void ShowUsage()
 	printf("-e Jpeg encode height\n");
 	printf("-b Jpeg bit rate \n");
 	printf("-p Set JPEG streaming using packet pipe\n");	
+	printf("-o Set overlapping function\n");	
 }
 
 int
@@ -76,7 +78,7 @@ main(int argc, char **argv)
 	int32_t i32Opt;
 
 	// Parse options
-	while ((i32Opt = getopt(argc, argv, "w:d:x:y:i:e:b:ph")) != -1) {
+	while ((i32Opt = getopt(argc, argv, "w:d:x:y:i:e:b:poh")) != -1) {
 		switch (i32Opt) {
 			case 'w':
 			{
@@ -193,6 +195,10 @@ main(int argc, char **argv)
 			case 'p':
 				s_sConfig.m_uiJpegPacketPipe = 1;				
 			break;
+
+			case 'o':
+				s_sConfig.m_uiOverlapping = 1;
+			break;			
 			
 			case 'h':
 			default:

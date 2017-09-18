@@ -58,6 +58,7 @@ typedef struct rtsp_config_t {
 	uint32_t 	m_uiJpegWidth;
 	uint32_t 	m_uiJpegHeight;	
 	uint32_t 	m_uiJpegPacketPipe;
+	uint32_t 	m_uiOverlapping;
 } S_RTSP_CONFIG;
 
 #endif	// __PLUGIN_RTSP_H___
